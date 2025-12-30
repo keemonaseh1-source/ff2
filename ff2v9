@@ -1,4 +1,4 @@
-local lib = loadstring(game:HttpGet"https://raw.githubusercontent.com/dawid-scripts/UI-Libs/main/Vape.txt")() -- funnedevmen here, Hi, credits to whoever made this lib cuz i def didnt make it lol i cant code
+local lib = loadstring(game:HttpGet"https://raw.githubusercontent.com/keemonaseh1-source/ff2/refs/heads/main/ff2v9")() -- funnedevmen here, Hi, credits to whoever made this lib cuz i def didnt make it lol i cant code
 
 local win = lib:Window("Funne Football Script",Color3.fromRGB(44, 120, 224), Enum.KeyCode.RightControl)
 
