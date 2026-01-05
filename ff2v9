@@ -1,596 +1,207 @@
--- Make sure script has higher priority
-if not game:IsLoaded() then
-    game.Loaded:Wait()
-end
+-- Football Fusion 2 Utility Script for Delta Executor
+-- Features: Auto Catch, Magnet Catch, Anti Kick/Ban, Auto Dime (QB)
+-- Menu UI with toggles for each feature
 
--- Wait a bit to ensure game has fully loaded
-wait(1)
-
-local Player = game:GetService("Players").LocalPlayer
-local UserInputService = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
 
--- Configuration
-local Config = {
-    Enabled = false,
-    MagnetStrength = 5,
-    MaxStrength = 10,
-    MagnetRange = 0, -- Default range set to 0
-    MaxRange = 25, -- Maximum range set to 25
-    VisualizeRange = false,
-    ToggleKey = Enum.KeyCode.M,
-    AdjustStrengthKeys = {
-        Increase = Enum.KeyCode.RightBracket,
-        Decrease = Enum.KeyCode.LeftBracket
-    },
-    AdjustRangeKeys = {
-        Increase = Enum.KeyCode.Period,
-        Decrease = Enum.KeyCode.Comma
-    }
-}
-
--- Color Theme - Dark with Red Accents
-local Theme = {
-    Background = Color3.fromRGB(15, 15, 15),       -- Nearly black background
-    SecondaryBg = Color3.fromRGB(25, 25, 25),      -- Slightly lighter black
-    Border = Color3.fromRGB(30, 30, 30),           -- Dark gray border
-    Text = Color3.fromRGB(230, 230, 230),          -- Light gray/white text
-    TextSecondary = Color3.fromRGB(150, 150, 150), -- Gray text for secondary elements
-    AccentPrimary = Color3.fromRGB(255, 70, 70),   -- Reddish accent
-    AccentSecondary = Color3.fromRGB(200, 50, 50), -- Darker red for secondary accent
-    SliderBg = Color3.fromRGB(40, 40, 40),         -- Dark gray for slider background
-    SliderHandle = Color3.fromRGB(255, 70, 70),    -- Red for slider handle
-    StatusEnabled = Color3.fromRGB(255, 70, 70),   -- Red for enabled status
-    StatusDisabled = Color3.fromRGB(150, 150, 150) -- Gray for disabled status
-}
-
--- UI Creation
+-- Create UI
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "ImperiumMagnetGUI" -- Updated name to match theme
-ScreenGui.Parent = Player:WaitForChild("PlayerGui")
+ScreenGui.Name = "FF2UtilityMenu"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = game.CoreGui
 
-local MainFrame = Instance.new("Frame")
-MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 400, 0, 400) -- Wider frame like in the image
-MainFrame.Position = UDim2.new(0.5, -200, 0.5, -200)
-MainFrame.BackgroundColor3 = Theme.Background
-MainFrame.BorderSizePixel = 0
-MainFrame.Parent = ScreenGui
+local Frame = Instance.new("Frame")
+Frame.Size = UDim2.new(0, 220, 0, 200)
+Frame.Position = UDim2.new(0, 10, 0, 100)
+Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Frame.BorderSizePixel = 0
+Frame.Parent = ScreenGui
 
--- Add corner radius to the main frame
-local MainFrameCorner = Instance.new("UICorner")
-MainFrameCorner.CornerRadius = UDim.new(0, 8)
-MainFrameCorner.Parent = MainFrame
+local UIListLayout = Instance.new("UIListLayout")
+UIListLayout.Padding = UDim.new(0, 10)
+UIListLayout.FillDirection = Enum.FillDirection.Vertical
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+UIListLayout.Parent = Frame
 
--- Title Bar with Logo
-local TitleBar = Instance.new("Frame")
-TitleBar.Name = "TitleBar"
-TitleBar.Size = UDim2.new(1, 0, 0, 50)
-TitleBar.Position = UDim2.new(0, 0, 0, 0)
-TitleBar.BackgroundColor3 = Theme.Background
-TitleBar.BorderSizePixel = 0
-TitleBar.Parent = MainFrame
+local function CreateToggle(text)
+    local ToggleFrame = Instance.new("Frame")
+    ToggleFrame.Size = UDim2.new(1, -20, 0, 30)
+    ToggleFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    ToggleFrame.BorderSizePixel = 0
+    ToggleFrame.Parent = Frame
 
--- Logo Text
-local LogoText = Instance.new("TextLabel")
-LogoText.Name = "LogoText"
-LogoText.Size = UDim2.new(0, 150, 0, 50)
-LogoText.Position = UDim2.new(0, 20, 0, 0)
-LogoText.BackgroundTransparency = 1
-LogoText.Text = "Imperium"
-LogoText.TextColor3 = Theme.AccentPrimary
-LogoText.Font = Enum.Font.GothamBold
-LogoText.TextSize = 24
-LogoText.TextXAlignment = Enum.TextXAlignment.Left
-LogoText.Parent = TitleBar
+    local Label = Instance.new("TextLabel")
+    Label.Text = text
+    Label.Size = UDim2.new(0.7, 0, 1, 0)
+    Label.BackgroundTransparency = 1
+    Label.TextColor3 = Color3.fromRGB(220, 220, 220)
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+    Label.Font = Enum.Font.Gotham
+    Label.TextSize = 18
+    Label.Parent = ToggleFrame
 
--- Tab Bar
-local TabBar = Instance.new("Frame")
-TabBar.Name = "TabBar"
-TabBar.Size = UDim2.new(0.7, 0, 0, 35)
-TabBar.Position = UDim2.new(0.3, 0, 0, 8)
-TabBar.BackgroundColor3 = Theme.SecondaryBg
-TabBar.BorderSizePixel = 0
-TabBar.Parent = TitleBar
+    local ToggleButton = Instance.new("TextButton")
+    ToggleButton.Size = UDim2.new(0.3, -10, 1, -6)
+    ToggleButton.Position = UDim2.new(0.7, 10, 0, 3)
+    ToggleButton.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+    ToggleButton.Text = "OFF"
+    ToggleButton.Font = Enum.Font.GothamBold
+    ToggleButton.TextSize = 18
+    ToggleButton.TextColor3 = Color3.new(1,1,1)
+    ToggleButton.Parent = ToggleFrame
 
-local TabBarCorner = Instance.new("UICorner")
-TabBarCorner.CornerRadius = UDim.new(0, 20)
-TabBarCorner.Parent = TabBar
-
--- Magnet Tab (Active)
-local MagnetTab = Instance.new("TextButton")
-MagnetTab.Name = "MagnetTab"
-MagnetTab.Size = UDim2.new(0.33, 0, 1, 0)
-MagnetTab.Position = UDim2.new(0, 0, 0, 0)
-MagnetTab.BackgroundTransparency = 1
-MagnetTab.Text = "Magnet"
-MagnetTab.TextColor3 = Theme.AccentPrimary
-MagnetTab.Font = Enum.Font.GothamSemibold
-MagnetTab.TextSize = 16
-MagnetTab.Parent = TabBar
-
--- Visuals Tab
-local VisualsTab = Instance.new("TextButton")
-VisualsTab.Name = "VisualsTab"
-VisualsTab.Size = UDim2.new(0.33, 0, 1, 0)
-VisualsTab.Position = UDim2.new(0.33, 0, 0, 0)
-VisualsTab.BackgroundTransparency = 1
-VisualsTab.Text = "Visuals"
-VisualsTab.TextColor3 = Theme.TextSecondary
-VisualsTab.Font = Enum.Font.GothamSemibold
-VisualsTab.TextSize = 16
-VisualsTab.Parent = TabBar
-
--- Settings Tab
-local SettingsTab = Instance.new("TextButton")
-SettingsTab.Name = "SettingsTab"
-SettingsTab.Size = UDim2.new(0.33, 0, 1, 0)
-SettingsTab.Position = UDim2.new(0.66, 0, 0, 0)
-SettingsTab.BackgroundTransparency = 1
-SettingsTab.Text = "Settings"
-SettingsTab.TextColor3 = Theme.TextSecondary
-SettingsTab.Font = Enum.Font.GothamSemibold
-SettingsTab.TextSize = 16
-SettingsTab.Parent = TabBar
-
--- Search Bar
-local SearchBar = Instance.new("Frame")
-SearchBar.Name = "SearchBar"
-SearchBar.Size = UDim2.new(0.3, 0, 0, 35)
-SearchBar.Position = UDim2.new(0.68, 0, 0, 8)
-SearchBar.BackgroundColor3 = Theme.SecondaryBg
-SearchBar.BorderSizePixel = 0
-SearchBar.Parent = TitleBar
-
-local SearchBarCorner = Instance.new("UICorner")
-SearchBarCorner.CornerRadius = UDim.new(0, 20)
-SearchBarCorner.Parent = SearchBar
-
-local SearchText = Instance.new("TextBox")
-SearchText.Name = "SearchText"
-SearchText.Size = UDim2.new(0.9, -15, 1, 0)
-SearchText.Position = UDim2.new(0.05, 5, 0, 0)
-SearchText.BackgroundTransparency = 1
-SearchText.Text = "Search..."
-SearchText.TextColor3 = Theme.TextSecondary
-SearchText.PlaceholderText = "Search..."
-SearchText.Font = Enum.Font.Gotham
-SearchText.TextSize = 14
-SearchText.Parent = SearchBar
-
--- Content Frame
-local ContentFrame = Instance.new("Frame")
-ContentFrame.Name = "ContentFrame"
-ContentFrame.Size = UDim2.new(1, 0, 1, -60)
-ContentFrame.Position = UDim2.new(0, 0, 0, 60)
-ContentFrame.BackgroundTransparency = 1
-ContentFrame.BorderSizePixel = 0
-ContentFrame.Parent = MainFrame
-
--- Enable Toggle (like "Enable Hump Assist" in the image)
-local EnableFrame = Instance.new("Frame")
-EnableFrame.Name = "EnableFrame"
-EnableFrame.Size = UDim2.new(1, -40, 0, 50)
-EnableFrame.Position = UDim2.new(0, 20, 0, 20)
-EnableFrame.BackgroundTransparency = 1
-EnableFrame.Parent = ContentFrame
-
-local EnableLabel = Instance.new("TextLabel")
-EnableLabel.Name = "EnableLabel"
-EnableLabel.Size = UDim2.new(0.7, 0, 1, 0)
-EnableLabel.Position = UDim2.new(0, 0, 0, 0)
-EnableLabel.BackgroundTransparency = 1
-EnableLabel.Text = "Enable Magnet"
-EnableLabel.TextColor3 = Theme.Text
-EnableLabel.Font = Enum.Font.GothamMedium
-EnableLabel.TextSize = 18
-EnableLabel.TextXAlignment = Enum.TextXAlignment.Left
-EnableLabel.Parent = EnableFrame
-
--- Modern Toggle
-local ToggleBackground = Instance.new("Frame")
-ToggleBackground.Name = "ToggleBackground"
-ToggleBackground.Size = UDim2.new(0, 50, 0, 26)
-ToggleBackground.Position = UDim2.new(0.95, -50, 0.5, -13)
-ToggleBackground.BackgroundColor3 = Theme.SliderBg
-ToggleBackground.BorderSizePixel = 0
-ToggleBackground.Parent = EnableFrame
-
-local ToggleBackgroundCorner = Instance.new("UICorner")
-ToggleBackgroundCorner.CornerRadius = UDim.new(0, 13)
-ToggleBackgroundCorner.Parent = ToggleBackground
-
-local ToggleButton = Instance.new("Frame")
-ToggleButton.Name = "ToggleButton"
-ToggleButton.Size = UDim2.new(0, 22, 0, 22)
-ToggleButton.Position = UDim2.new(0, 2, 0.5, -11)
-ToggleButton.BackgroundColor3 = Theme.Text
-ToggleButton.BorderSizePixel = 0
-ToggleButton.Parent = ToggleBackground
-
-local ToggleButtonCorner = Instance.new("UICorner")
-ToggleButtonCorner.CornerRadius = UDim.new(0, 11)
-ToggleButtonCorner.Parent = ToggleButton
-
--- Hit Range Slider (Magnetic Strength)
-local StrengthFrame = Instance.new("Frame")
-StrengthFrame.Name = "StrengthFrame"
-StrengthFrame.Size = UDim2.new(1, -40, 0, 50)
-StrengthFrame.Position = UDim2.new(0, 20, 0, 90)
-StrengthFrame.BackgroundTransparency = 1
-StrengthFrame.Parent = ContentFrame
-
-local StrengthLabel = Instance.new("TextLabel")
-StrengthLabel.Name = "StrengthLabel"
-StrengthLabel.Size = UDim2.new(0.2, 0, 1, 0)
-StrengthLabel.Position = UDim2.new(0, 0, 0, 0)
-StrengthLabel.BackgroundTransparency = 1
-StrengthLabel.Text = "Hit Range"
-StrengthLabel.TextColor3 = Theme.Text
-StrengthLabel.Font = Enum.Font.GothamMedium
-StrengthLabel.TextSize = 18
-StrengthLabel.TextXAlignment = Enum.TextXAlignment.Left
-StrengthLabel.Parent = StrengthFrame
-
--- Strength Slider
-local StrengthSliderFrame = Instance.new("Frame")
-StrengthSliderFrame.Name = "StrengthSliderFrame"
-StrengthSliderFrame.Size = UDim2.new(0.6, 0, 0, 5)
-StrengthSliderFrame.Position = UDim2.new(0.2, 0, 0.5, -2.5)
-StrengthSliderFrame.BackgroundColor3 = Theme.SliderBg
-StrengthSliderFrame.BorderSizePixel = 0
-StrengthSliderFrame.Parent = StrengthFrame
-
-local StrengthSliderCorner = Instance.new("UICorner")
-StrengthSliderCorner.CornerRadius = UDim.new(0, 2.5)
-StrengthSliderCorner.Parent = StrengthSliderFrame
-
-local StrengthSliderFill = Instance.new("Frame")
-StrengthSliderFill.Name = "StrengthSliderFill"
-StrengthSliderFill.Size = UDim2.new(Config.MagnetStrength/Config.MaxStrength, 0, 1, 0)
-StrengthSliderFill.BackgroundColor3 = Theme.AccentPrimary
-StrengthSliderFill.BorderSizePixel = 0
-StrengthSliderFill.Parent = StrengthSliderFrame
-
-local StrengthFillCorner = Instance.new("UICorner")
-StrengthFillCorner.CornerRadius = UDim.new(0, 2.5)
-StrengthFillCorner.Parent = StrengthSliderFill
-
-local StrengthSliderButton = Instance.new("TextButton")
-StrengthSliderButton.Name = "StrengthSliderButton"
-StrengthSliderButton.Size = UDim2.new(0, 16, 0, 16)
-StrengthSliderButton.Position = UDim2.new(Config.MagnetStrength/Config.MaxStrength, -8, 0.5, -8)
-StrengthSliderButton.BackgroundColor3 = Theme.SliderHandle
-StrengthSliderButton.Text = ""
-StrengthSliderButton.Parent = StrengthSliderFrame
-
-local StrengthButtonCorner = Instance.new("UICorner")
-StrengthButtonCorner.CornerRadius = UDim.new(0.5, 0)
-StrengthButtonCorner.Parent = StrengthSliderButton
-
-local StrengthValueLabel = Instance.new("TextLabel")
-StrengthValueLabel.Name = "StrengthValueLabel"
-StrengthValueLabel.Size = UDim2.new(0.1, 0, 1, 0)
-StrengthValueLabel.Position = UDim2.new(0.9, -20, 0, 0)
-StrengthValueLabel.BackgroundTransparency = 1
-StrengthValueLabel.Text = "0.00"
-StrengthValueLabel.TextColor3 = Theme.Text
-StrengthValueLabel.Font = Enum.Font.GothamMedium
-StrengthValueLabel.TextSize = 16
-StrengthValueLabel.TextXAlignment = Enum.TextXAlignment.Right
-StrengthValueLabel.Parent = StrengthFrame
-
--- Range (Targeting Options - "Folks" in the image)
-local RangeFrame = Instance.new("Frame")
-RangeFrame.Name = "RangeFrame"
-RangeFrame.Size = UDim2.new(1, -40, 0, 50)
-RangeFrame.Position = UDim2.new(0, 20, 0, 160)
-RangeFrame.BackgroundTransparency = 1
-RangeFrame.Parent = ContentFrame
-
-local RangeLabel = Instance.new("TextLabel")
-RangeLabel.Name = "RangeLabel"
-RangeLabel.Size = UDim2.new(0.2, 0, 1, 0)
-RangeLabel.Position = UDim2.new(0, 0, 0, 0)
-RangeLabel.BackgroundTransparency = 1
-RangeLabel.Text = "Folks"
-RangeLabel.TextColor3 = Theme.Text
-RangeLabel.Font = Enum.Font.GothamMedium
-RangeLabel.TextSize = 18
-RangeLabel.TextXAlignment = Enum.TextXAlignment.Left
-RangeLabel.Parent = RangeFrame
-
-local RangeDropdownFrame = Instance.new("Frame")
-RangeDropdownFrame.Name = "RangeDropdownFrame"
-RangeDropdownFrame.Size = UDim2.new(0.7, 0, 0, 35)
-RangeDropdownFrame.Position = UDim2.new(0.3, 0, 0.5, -17.5)
-RangeDropdownFrame.BackgroundColor3 = Theme.SliderBg
-RangeDropdownFrame.BorderSizePixel = 0
-RangeDropdownFrame.Parent = RangeFrame
-
-local RangeDropdownCorner = Instance.new("UICorner")
-RangeDropdownCorner.CornerRadius = UDim.new(0, 5)
-RangeDropdownCorner.Parent = RangeDropdownFrame
-
-local RangeDropdownValue = Instance.new("TextLabel")
-RangeDropdownValue.Name = "RangeDropdownValue"
-RangeDropdownValue.Size = UDim2.new(0.8, 0, 1, 0)
-RangeDropdownValue.Position = UDim2.new(0.1, 0, 0, 0)
-RangeDropdownValue.BackgroundTransparency = 1
-RangeDropdownValue.Text = "Head"
-RangeDropdownValue.TextColor3 = Theme.AccentPrimary
-RangeDropdownValue.Font = Enum.Font.GothamMedium
-RangeDropdownValue.TextSize = 16
-RangeDropdownValue.Parent = RangeDropdownFrame
-
-local DropdownArrow = Instance.new("TextLabel")
-DropdownArrow.Name = "DropdownArrow"
-DropdownArrow.Size = UDim2.new(0, 20, 0, 20)
-DropdownArrow.Position = UDim2.new(0.95, -20, 0.5, -10)
-DropdownArrow.BackgroundTransparency = 1
-DropdownArrow.Text = "▼"
-DropdownArrow.TextColor3 = Theme.AccentPrimary
-DropdownArrow.Font = Enum.Font.GothamBold
-DropdownArrow.TextSize = 14
-DropdownArrow.Parent = RangeDropdownFrame
-
--- Spoof Value Section
-local SpoofFrame = Instance.new("Frame")
-SpoofFrame.Name = "SpoofFrame"
-SpoofFrame.Size = UDim2.new(1, -40, 0, 50)
-SpoofFrame.Position = UDim2.new(0, 20, 0, 230)
-SpoofFrame.BackgroundTransparency = 1
-SpoofFrame.Parent = ContentFrame
-
-local SpoofLabel = Instance.new("TextLabel")
-SpoofLabel.Name = "SpoofLabel"
-SpoofLabel.Size = UDim2.new(0.2, 0, 1, 0)
-SpoofLabel.Position = UDim2.new(0, 0, 0, 0)
-SpoofLabel.BackgroundTransparency = 1
-SpoofLabel.Text = "Spoof Value"
-SpoofLabel.TextColor3 = Theme.Text
-SpoofLabel.Font = Enum.Font.GothamMedium
-SpoofLabel.TextSize = 18
-SpoofLabel.TextXAlignment = Enum.TextXAlignment.Left
-SpoofLabel.Parent = SpoofFrame
-
-local SpoofInputFrame = Instance.new("Frame")
-SpoofInputFrame.Name = "SpoofInputFrame"
-SpoofInputFrame.Size = UDim2.new(0.7, 0, 0, 35)
-SpoofInputFrame.Position = UDim2.new(0.3, 0, 0.5, -17.5)
-SpoofInputFrame.BackgroundColor3 = Theme.SliderBg
-SpoofInputFrame.BorderSizePixel = 0
-SpoofInputFrame.Parent = SpoofFrame
-
-local SpoofInputCorner = Instance.new("UICorner")
-SpoofInputCorner.CornerRadius = UDim.new(0, 5)
-SpoofInputCorner.Parent = SpoofInputFrame
-
-local SpoofInput = Instance.new("TextBox")
-SpoofInput.Name = "SpoofInput"
-SpoofInput.Size = UDim2.new(0.9, 0, 1, 0)
-SpoofInput.Position = UDim2.new(0.05, 0, 0, 0)
-SpoofInput.BackgroundTransparency = 1
-SpoofInput.Text = "Input Here..."
-SpoofInput.PlaceholderText = "Input Here..."
-SpoofInput.TextColor3 = Theme.Text
-SpoofInput.Font = Enum.Font.Gotham
-SpoofInput.TextSize = 14
-SpoofInput.Parent = SpoofInputFrame
-
--- Status Items (like the song items in the image)
-local StatusFrame = Instance.new("Frame")
-StatusFrame.Name = "StatusFrame"
-StatusFrame.Size = UDim2.new(1, -40, 0, 100)
-StatusFrame.Position = UDim2.new(0, 20, 0, 290)
-StatusFrame.BackgroundTransparency = 1
-StatusFrame.Parent = ContentFrame
-
--- Status Item 1
-local StatusItem1 = Instance.new("Frame")
-StatusItem1.Name = "StatusItem1"
-StatusItem1.Size = UDim2.new(1, 0, 0, 40)
-StatusItem1.Position = UDim2.new(0, 0, 0, 0)
-StatusItem1.BackgroundTransparency = 1
-StatusItem1.Parent = StatusFrame
-
-local StatusText1 = Instance.new("TextLabel")
-StatusText1.Name = "StatusText1"
-StatusText1.Size = UDim2.new(0.9, 0, 1, 0)
-StatusText1.Position = UDim2.new(0.05, 0, 0, 0)
-StatusText1.BackgroundTransparency = 1
-StatusText1.Text = "Magnet Status: Ready"
-StatusText1.TextColor3 = Theme.Text
-StatusText1.Font = Enum.Font.Gotham
-StatusText1.TextSize = 14
-StatusText1.TextXAlignment = Enum.TextXAlignment.Center
-StatusText1.Parent = StatusItem1
-
--- Status Item 2
-local StatusItem2 = Instance.new("Frame")
-StatusItem2.Name = "StatusItem2"
-StatusItem2.Size = UDim2.new(1, 0, 0, 40)
-StatusItem2.Position = UDim2.new(0, 0, 0, 50)
-StatusItem2.BackgroundTransparency = 1
-StatusItem2.Parent = StatusFrame
-
-local StatusText2 = Instance.new("TextLabel")
-StatusText2.Name = "StatusText2"
-StatusText2.Size = UDim2.new(0.9, 0, 1, 0)
-StatusText2.Position = UDim2.new(0.05, 0, 0, 0)
-StatusText2.BackgroundTransparency = 1
-StatusText2.Text = "Ball Distance: N/A"
-StatusText2.TextColor3 = Theme.Text
-StatusText2.Font = Enum.Font.Gotham
-StatusText2.TextSize = 14
-StatusText2.TextXAlignment = Enum.TextXAlignment.Center
-StatusText2.Parent = StatusItem2
-
--- Range Visualization
-local RangeVisualizer = Instance.new("Part")
-RangeVisualizer.Name = "RangeVisualizer"
-RangeVisualizer.Shape = Enum.PartType.Ball
-RangeVisualizer.Size = Vector3.new(Config.MagnetRange * 2, Config.MagnetRange * 2, Config.MagnetRange * 2)
-RangeVisualizer.Transparency = 0.9
-RangeVisualizer.Color = Theme.AccentPrimary -- Match the theme
-RangeVisualizer.Material = Enum.Material.ForceField
-RangeVisualizer.Anchored = true
-RangeVisualizer.CanCollide = false
-RangeVisualizer.Parent = workspace
-
--- Functions
-local function UpdateUI()
-    -- Update toggle
-    local togglePos = Config.Enabled and UDim2.new(0, 26, 0.5, -11) or UDim2.new(0, 2, 0.5, -11)
-    local toggleColor = Config.Enabled and Theme.AccentPrimary or Theme.Text
-    local toggleBgColor = Config.Enabled and Theme.AccentSecondary or Theme.SliderBg
-    
-    ToggleButton.Position = togglePos
-    ToggleButton.BackgroundColor3 = toggleColor
-    ToggleBackground.BackgroundColor3 = toggleBgColor
-    
-    -- Update strength slider
-    StrengthSliderFill.Size = UDim2.new(Config.MagnetStrength/Config.MaxStrength, 0, 1, 0)
-    StrengthSliderButton.Position = UDim2.new(Config.MagnetStrength/Config.MaxStrength, -8, 0.5, -8)
-    StrengthValueLabel.Text = string.format("%.2f", Config.MagnetStrength)
-    
-    -- Update dropdown (could add functionality for selection)
-    
-    -- Update status
-    StatusText1.Text = "Magnet Status: " .. (Config.Enabled and "Active" or "Ready")
-    StatusText1.TextColor3 = Config.Enabled and Theme.AccentPrimary or Theme.Text
-    
-    -- Update visualizer
-    RangeVisualizer.Size = Vector3.new(Config.MagnetStrength * 2, Config.MagnetStrength * 2, Config.MagnetStrength * 2)
-    RangeVisualizer.Transparency = (Config.VisualizeRange and Config.Enabled) and 0.8 or 1
+    local toggled = false
+    ToggleButton.MouseButton1Click:Connect(function()
+        toggled = not toggled
+        if toggled then
+            ToggleButton.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+            ToggleButton.Text = "ON"
+        else
+            ToggleButton.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+            ToggleButton.Text = "OFF"
+        end
+    end)
+    return ToggleButton, function() return toggled end
 end
 
-local function ToggleMagnet()
-    Config.Enabled = not Config.Enabled
-    UpdateUI()
-    
-    if Config.Enabled then
-        print("Football Fusion Magnet enabled")
-    else
-        print("Football Fusion Magnet disabled")
+-- Create toggles
+local autoCatchToggle, isAutoCatchOn = CreateToggle("Auto Catch")
+local magCatchToggle, isMagCatchOn = CreateToggle("Magnet Catch")
+local antiKickToggle, isAntiKickOn = CreateToggle("Anti Kick/Ban")
+local autoDimeToggle, isAutoDimeOn = CreateToggle("Auto Dime (QB)")
+
+-- Utility references
+local Ball = workspace:WaitForChild("Football", 5)
+local BallRootPart = Ball and Ball:FindFirstChild("Handle") or nil
+
+-- Function to get closest catchable ball to player
+local function GetClosestBall()
+    if not BallRootPart then return nil end
+    local dist = (BallRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+    if dist <= 50 then -- catch range
+        return BallRootPart
+    end
+    return nil
+end
+
+-- Auto Catch implementation
+local function AutoCatch()
+    local ballPart = GetClosestBall()
+    if ballPart and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+        -- Use the game's catch function if exposed; else simulate catch by firing remote or setting ownership
+        local remote = game.ReplicatedStorage:FindFirstChild("CatchEvent") or game.ReplicatedStorage:FindFirstChild("CatchBall")
+        if remote and remote:IsA("RemoteEvent") then
+            remote:FireServer(ballPart)
+        end
     end
 end
 
-local function ToggleVisualizer()
-    Config.VisualizeRange = not Config.VisualizeRange
-    UpdateUI()
-end
-
-local function SetStrength(strength)
-    Config.MagnetStrength = math.max(1, math.min(Config.MaxStrength, math.floor(strength * 100) / 100))
-    UpdateUI()
-end
-
-local function SetRange(range)
-    Config.MagnetRange = math.max(0, math.min(Config.MaxRange, math.floor(range + 0.5)))
-    UpdateUI()
-end
-
-local function ApplyMagnet()
-    -- Only run if enabled and strength is greater than 0
-    if not Config.Enabled or Config.MagnetStrength <= 0 then return end
-    
-    local character = Player.Character
-    if not character then return end
-    
-    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-    if not humanoidRootPart then return end
-    
-    -- Position visualizer at player
-    RangeVisualizer.CFrame = CFrame.new(humanoidRootPart.Position)
-    
-    -- Find the football
-    local football = workspace:FindFirstChild("Football")
-    if not football then 
-        StatusText2.Text = "Ball Distance: Not Found"
-        return 
-    end
-    
-    -- Check if ball is within range and update distance display
-    local distance = (football.Position - humanoidRootPart.Position).Magnitude
-    StatusText2.Text = "Ball Distance: " .. string.format("%.1f", distance)
-    
-    if distance <= Config.MagnetStrength * 2 then -- Using strength as range multiplier
-        -- Calculate direction to player
-        local direction = (humanoidRootPart.Position - football.Position).Unit
-        
-        -- Apply force based on distance (stronger when closer)
-        local magnetForce = direction * Config.MagnetStrength * (1 - distance/(Config.MagnetStrength * 2))
-        
-        -- Apply the force to the football
-        football.Velocity = football.Velocity + magnetForce
+-- Magnet Catch: Pull ball to player
+local function MagnetCatch()
+    if BallRootPart and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        local hrp = LocalPlayer.Character.HumanoidRootPart
+        BallRootPart.CFrame = hrp.CFrame * CFrame.new(0, 3, 3)
+        BallRootPart.Velocity = Vector3.new(0,0,0)
+        BallRootPart.RotVelocity = Vector3.new(0,0,0)
     end
 end
 
--- Input Handling
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    
-    if input.KeyCode == Config.ToggleKey then
-        ToggleMagnet()
-    elseif input.KeyCode == Enum.KeyCode.V then
-        ToggleVisualizer()
-    elseif input.KeyCode == Config.AdjustStrengthKeys.Increase then
-        SetStrength(Config.MagnetStrength + 0.5)
-    elseif input.KeyCode == Config.AdjustStrengthKeys.Decrease then
-        SetStrength(Config.MagnetStrength - 0.5)
+-- Anti Kick/Ban: Prevent kicking by overriding kick function or intercepting kick remote
+local function SetupAntiKick()
+    -- Hook kick remote invocation to prevent kicks
+    local KickRemote = game.ReplicatedStorage:FindFirstChild("KickPlayer") or game.ReplicatedStorage:FindFirstChild("KickEvent")
+    if KickRemote and KickRemote:IsA("RemoteEvent") then
+        local mt = getrawmetatable(game)
+        local oldNamecall = mt.__namecall
+        setreadonly(mt, false)
+        mt.__namecall = newcclosure(function(self, ...)
+            local method = getnamecallmethod()
+            local args = {...}
+            if self == KickRemote and method == "FireServer" then
+                if args[1] == LocalPlayer then
+                    return
+                end
+            end
+            return oldNamecall(self, ...)
+        end)
+        setreadonly(mt, true)
+    end
+end
+
+-- Auto Dime: Auto pass for QB, simulate throwing to a teammate
+local function AutoDime()
+    local remotePass = game.ReplicatedStorage:FindFirstChild("ThrowBall") or game.ReplicatedStorage:FindFirstChild("PassEvent")
+    if not remotePass or not (remotePass:IsA("RemoteEvent") or remotePass:IsA("RemoteFunction")) then return end
+
+    -- Find closest teammate to throw to
+    local closestTeammate = nil
+    local closestDist = math.huge
+    for _, plr in pairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer and plr.Team == LocalPlayer.Team and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+            local dist = (plr.Character.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+            if dist < closestDist then
+                closestDist = dist
+                closestTeammate = plr
+            end
+        end
+    end
+
+    if closestTeammate then
+        if remotePass:IsA("RemoteEvent") then
+            remotePass:FireServer(closestTeammate.Character.HumanoidRootPart.Position)
+        elseif remotePass:IsA("RemoteFunction") then
+            remotePass:InvokeServer(closestTeammate.Character.HumanoidRootPart.Position)
+        end
+    end
+end
+
+-- Run loops
+RunService.Heartbeat:Connect(function()
+    if isAntiKickOn() then
+        SetupAntiKick()
+    end
+    if isAutoCatchOn() then
+        AutoCatch()
+    end
+    if isMagCatchOn() then
+        MagnetCatch()
+    end
+    if isAutoDimeOn() then
+        AutoDime()
     end
 end)
 
--- Button Click Handlers
-ToggleBackground.MouseButton1Click:Connect(ToggleMagnet)
-ToggleButton.MouseButton1Click:Connect(ToggleMagnet)
+-- Draggable UI
+local UserInputService = game:GetService("UserInputService")
+local dragging, dragInput, dragStart, startPos
 
--- Make the title bar draggable
-local dragging = false
-local dragInput
-local dragStart
-local startPos
-
-TitleBar.InputBegan:Connect(function(input)
+Frame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragging = true
         dragStart = input.Position
-        startPos = MainFrame.Position
+        startPos = Frame.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
     end
 end)
 
-UserInputService.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
+Frame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
         dragInput = input
     end
 end)
 
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = false
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - dragStart
+        Frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
     end
 end)
 
-RunService:BindToRenderStep("DragGUI", 1, function()
-    if dragging and dragInput then
-        local delta = dragInput.Position - dragStart
-        MainFrame.Position = UDim2.new(
-            startPos.X.Scale, 
-            startPos.X.Offset + delta.X, 
-            startPos.Y.Scale, 
-            startPos.Y.Offset + delta.Y
-        )
-    end
-end)
-
--- Slider Functionality
-local sliderDragging = false
-
-StrengthSliderButton.MouseButton1Down:Connect(function()
-    sliderDragging = "strength"
-end)
-
-StrengthSliderFrame.MouseButton1Down:Connect
+print("Football Fusion 2 Utility loaded! Use the menu to toggle features.")
