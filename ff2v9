@@ -17,7 +17,7 @@ local Window = Rayfield:CreateWindow({
     DisableRayfieldPrompts = false,
     DisableBuildWarnings = false,
     ConfigurationSaving = {
-        Enabled = true,
+        Enabled = False,
         FolderName = "FootballFusionHub",
         FileName = "BigHub"
     },
@@ -30,11 +30,11 @@ local Window = Rayfield:CreateWindow({
     KeySettings = {
         Title = "Verdin",
         Subtitle = "Key System",
-        Note = "Key = Hello",
+        Note = "Key = Keemo",
         FileName = "KeyFile",
         SaveKey = true,
         GrabKeyFromSite = false,
-        Key = {"Hello"}
+        Key = {"Keemo"}
     }
 })
 
